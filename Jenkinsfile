@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     options {
-        
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
@@ -16,27 +15,28 @@ pipeline {
         STAGING_PORT = '5001'
         PROD_PORT = '5000'
         SONAR_HOST_URL = 'http://localhost:9000'
+        PYTHON_HOME = 'C:\\Users\\HP\\AppData\\Local\\Programs\\Python\\Python313'
     }
 
     stages {
 
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         // STAGE 1: BUILD
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         stage('Build') {
             steps {
-                echo '╔══════════════════════════════════════╗'
-                echo '║        STAGE 1: BUILD                ║'
-                echo '╚══════════════════════════════════════╝'
+                echo '+======================================+'
+                echo '|        STAGE 1: BUILD                |'
+                echo '+======================================+'
 
                 echo 'Setting up Python Virtual Environment...'
-                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\Python\\Python313\\python.exe" -m venv .venv'
-                
+                bat "\"%PYTHON_HOME%\\python.exe\" -m venv .venv"
+
                 echo 'Installing Python dependencies...'
                 bat '.venv\\Scripts\\python.exe -m pip install --upgrade pip'
-                bat '.venv\\Scripts\\pip install -r requirements.txt'
+                bat '.venv\\Scripts\\pip.exe install -r requirements.txt'
 
-                echo "BUILD COMPLETE"
+                echo 'BUILD COMPLETE'
             }
             post {
                 success {
@@ -45,14 +45,14 @@ pipeline {
             }
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         // STAGE 2: TEST
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         stage('Test') {
             steps {
-                echo '╔══════════════════════════════════════╗'
-                echo '║        STAGE 2: TEST                 ║'
-                echo '╚══════════════════════════════════════╝'
+                echo '+======================================+'
+                echo '|        STAGE 2: TEST                 |'
+                echo '+======================================+'
 
                 echo 'Running tests...'
                 bat '.venv\\Scripts\\python.exe -m pytest tests/ -v --junitxml=test-results.xml --cov=app --cov-report=xml:coverage.xml'
@@ -67,14 +67,14 @@ pipeline {
             }
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         // STAGE 3: CODE QUALITY
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         stage('Code Quality') {
             steps {
-                echo '╔══════════════════════════════════════╗'
-                echo '║     STAGE 3: CODE QUALITY            ║'
-                echo '╚══════════════════════════════════════╝'
+                echo '+======================================+'
+                echo '|     STAGE 3: CODE QUALITY            |'
+                echo '+======================================+'
 
                 echo 'Running flake8 linting...'
                 bat '.venv\\Scripts\\python.exe -m flake8 app/ --output-file=flake8-report.txt --statistics --count || exit 0'
@@ -89,8 +89,7 @@ pipeline {
                     }
                 }
 
-                echo 'SonarQube analysis pushed successfully!'
-                // Quality gate check is skipped to avoid Jenkins native credential sync timeouts.
+                echo 'SonarQube analysis complete!'
             }
             post {
                 always {
@@ -99,14 +98,14 @@ pipeline {
             }
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         // STAGE 4: SECURITY
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         stage('Security') {
             steps {
-                echo '╔══════════════════════════════════════╗'
-                echo '║       STAGE 4: SECURITY              ║'
-                echo '╚══════════════════════════════════════╝'
+                echo '+======================================+'
+                echo '|       STAGE 4: SECURITY              |'
+                echo '+======================================+'
 
                 echo 'Running Bandit security scan on Python code...'
                 bat '.venv\\Scripts\\python.exe -m bandit -r app/ -f json -o bandit-report.json || exit 0'
@@ -125,109 +124,128 @@ pipeline {
             }
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         // STAGE 5: DEPLOY TO STAGING
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         stage('Deploy - Staging') {
             steps {
-                echo '╔══════════════════════════════════════╗'
-                echo '║    STAGE 5: DEPLOY TO STAGING        ║'
-                echo '╚══════════════════════════════════════╝'
+                echo '+======================================+'
+                echo '|    STAGE 5: DEPLOY TO STAGING        |'
+                echo '+======================================+'
 
-                echo 'Stopping existing staging instance...'
-                // Kill any python/waitress process listening on port 5001
+                echo 'Stopping any existing staging instance on port 5001...'
                 bat '''
-                for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5001 ^| findstr LISTENING\') do taskkill /F /PID %%a || exit 0
+                    @echo off
+                    for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5001 ^| findstr LISTENING') do (
+                        echo Killing PID %%a
+                        taskkill /F /PID %%a 2>nul
+                    )
+                    exit /b 0
                 '''
 
-                echo 'Starting application in Staging mode...'
-                // Run Waitress server in background
-                bat 'start /b .venv\\Scripts\\python.exe -m waitress --port=5001 run:application > staging.log 2>&1'
+                echo 'Starting application in Staging mode on port 5001...'
+                bat '''
+                    @echo off
+                    start "" /b cmd /c ".venv\\Scripts\\python.exe -m waitress --port=5001 run:application > staging.log 2>&1"
+                    echo Waitress staging server launch command issued.
+                '''
 
-                echo 'Waiting for application to start...'
-                script {
-                    def healthy = false
-                    for (int i = 0; i < 5; i++) {
-                        try {
-                            sleep(time: 5, unit: 'SECONDS')
-                            bat 'curl -f http://localhost:5001/health'
-                            healthy = true
-                            break
-                        } catch (Exception e) {
-                            echo "Health check attempt ${i + 1}/5 failed, retrying..."
-                        }
-                    }
-                    if (!healthy) {
-                        error('Staging health check failed after 5 attempts')
-                    }
-                }
-                
-                echo 'Smoke tests passed on staging.'
+                echo 'Waiting for staging application to start...'
+                bat '''
+                    @echo off
+                    set RETRIES=0
+                    :loop
+                    if %RETRIES% GEQ 10 (
+                        echo Health check failed after 10 attempts
+                        exit /b 1
+                    )
+                    timeout /t 3 /nobreak >nul
+                    C:\\Windows\\System32\\curl.exe -s -f http://localhost:5001/health >nul 2>&1
+                    if %ERRORLEVEL% EQU 0 (
+                        echo Staging health check PASSED
+                        exit /b 0
+                    )
+                    set /a RETRIES+=1
+                    echo Attempt %RETRIES% - waiting...
+                    goto loop
+                '''
+
+                echo 'Staging deployment successful!'
             }
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         // STAGE 6: RELEASE TO PRODUCTION
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         stage('Release - Production') {
             steps {
-                echo '╔══════════════════════════════════════╗'
-                echo '║   STAGE 6: RELEASE TO PRODUCTION     ║'
-                echo '╚══════════════════════════════════════╝'
+                echo '+======================================+'
+                echo '|   STAGE 6: RELEASE TO PRODUCTION     |'
+                echo '+======================================+'
 
-                echo 'Stopping existing production instance...'
-                // Kill any python/waitress process listening on port 5000
+                echo 'Stopping any existing production instance on port 5000...'
                 bat '''
-                for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING\') do taskkill /F /PID %%a || exit 0
+                    @echo off
+                    for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING') do (
+                        echo Killing PID %%a
+                        taskkill /F /PID %%a 2>nul
+                    )
+                    exit /b 0
                 '''
 
-                echo 'Starting application in Production mode...'
-                // Run Waitress server in background
-                bat 'start /b .venv\\Scripts\\python.exe -m waitress --port=5000 run:application > prod.log 2>&1'
+                echo 'Starting application in Production mode on port 5000...'
+                bat '''
+                    @echo off
+                    start "" /b cmd /c ".venv\\Scripts\\python.exe -m waitress --port=5000 run:application > prod.log 2>&1"
+                    echo Waitress production server launch command issued.
+                '''
 
                 echo 'Creating Git release tag...'
-                bat 'git tag -a v%BUILD_NUMBER% -m "Release v%BUILD_NUMBER%" || exit 0'
-                bat 'git push origin v%BUILD_NUMBER% || exit 0'
-                
+                bat 'git tag -a v%BUILD_NUMBER% -m "Release v%BUILD_NUMBER%" 2>nul || exit /b 0'
+
                 echo 'Running production health check...'
-                script {
-                    def healthy = false
-                    for (int i = 0; i < 5; i++) {
-                        try {
-                            sleep(time: 5, unit: 'SECONDS')
-                            bat 'curl -f http://localhost:5000/health'
-                            healthy = true
-                            break
-                        } catch (Exception e) {
-                            echo "Production health check attempt ${i + 1}/5 failed, retrying..."
-                        }
-                    }
-                    if (!healthy) {
-                        error('Production health check failed after 5 attempts')
-                    }
-                }
+                bat '''
+                    @echo off
+                    set RETRIES=0
+                    :loop
+                    if %RETRIES% GEQ 10 (
+                        echo Health check failed after 10 attempts
+                        exit /b 1
+                    )
+                    timeout /t 3 /nobreak >nul
+                    C:\\Windows\\System32\\curl.exe -s -f http://localhost:5000/health >nul 2>&1
+                    if %ERRORLEVEL% EQU 0 (
+                        echo Production health check PASSED
+                        exit /b 0
+                    )
+                    set /a RETRIES+=1
+                    echo Attempt %RETRIES% - waiting...
+                    goto loop
+                '''
+
+                echo 'Production deployment successful!'
             }
         }
 
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         // STAGE 7: MONITORING
-        // ═══════════════════════════════════════════════════════
+        // -----------------------------------------------------------
         stage('Monitoring') {
             steps {
-                echo '╔══════════════════════════════════════╗'
-                echo '║      STAGE 7: MONITORING             ║'
-                echo '╚══════════════════════════════════════╝'
+                echo '+======================================+'
+                echo '|      STAGE 7: MONITORING             |'
+                echo '+======================================+'
 
                 echo 'Checking application health...'
-                bat 'curl -s http://localhost:5000/health'
+                bat 'C:\\Windows\\System32\\curl.exe -s http://localhost:5000/health'
 
                 echo 'Checking application metrics endpoint...'
-                bat 'curl -s http://localhost:5000/metrics'
+                bat 'C:\\Windows\\System32\\curl.exe -s http://localhost:5000/metrics'
 
                 echo 'Checking Prometheus targets...'
                 script {
                     try {
-                        bat 'curl -s http://localhost:9090/api/v1/targets'
+                        bat 'C:\\Windows\\System32\\curl.exe -s http://localhost:9090/api/v1/targets'
                         echo 'Prometheus is running and scraping targets.'
                     } catch (Exception e) {
                         echo 'Prometheus target check: Prometheus may still be initialising.'
@@ -264,4 +282,3 @@ Monitoring Infrastructure:
         }
     }
 }
-

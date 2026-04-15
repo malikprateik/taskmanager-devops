@@ -1,0 +1,43 @@
+# Docker Compose for STAGING environment
+# Deploys app on port 5001 + Prometheus for monitoring
+
+version: "3.8"
+
+services:
+  taskmanager-staging:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskmanager-staging
+    ports:
+      - "5001:5000"
+    environment:
+      - FLASK_ENV=staging
+      - APP_VERSION=staging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - taskmanager-net
+
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+    restart: unless-stopped
+    networks:
+      - taskmanager-net
+
+networks:
+  taskmanager-net:
+    driver: bridge

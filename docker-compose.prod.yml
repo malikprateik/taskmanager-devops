@@ -1,0 +1,35 @@
+# Docker Compose for PRODUCTION environment
+# Deploys app on port 5000 with production settings
+
+version: "3.8"
+
+services:
+  taskmanager-prod:
+    image: taskmanager:stable
+    container_name: taskmanager-prod
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - APP_VERSION=stable
+    restart: always
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - taskmanager-prod-net
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+
+networks:
+  taskmanager-prod-net:
+    driver: bridge

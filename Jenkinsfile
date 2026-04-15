@@ -137,7 +137,7 @@ pipeline {
                 echo 'Stopping existing staging instance...'
                 // Kill any python/waitress process listening on port 5001
                 bat '''
-                for /f "tokens=5" %%a in (\'netstat -aon ^| findstr :5001 ^| findstr LISTENING\') do taskkill /F /PID %%a || exit 0
+                for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5001 ^| findstr LISTENING\') do taskkill /F /PID %%a || exit 0
                 '''
 
                 echo 'Starting application in Staging mode...'
@@ -178,7 +178,7 @@ pipeline {
                 echo 'Stopping existing production instance...'
                 // Kill any python/waitress process listening on port 5000
                 bat '''
-                for /f "tokens=5" %%a in (\'netstat -aon ^| findstr :5000 ^| findstr LISTENING\') do taskkill /F /PID %%a || exit 0
+                for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5000 ^| findstr LISTENING\') do taskkill /F /PID %%a || exit 0
                 '''
 
                 echo 'Starting application in Production mode...'
@@ -264,3 +264,4 @@ Monitoring Infrastructure:
         }
     }
 }
+

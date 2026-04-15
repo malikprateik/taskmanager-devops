@@ -84,7 +84,7 @@ pipeline {
                     def scannerHome = tool name: 'SonarScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
                     withEnv(["JAVA_HOME=D:\\app\\jdk-21.0.9_windows-x64_bin\\jdk-21.0.9", "PATH+JAVA=D:\\app\\jdk-21.0.9_windows-x64_bin\\jdk-21.0.9\\bin"]) {
                         withSonarQubeEnv('SonarQube') {
-                            bat "call \"${scannerHome}\\bin\\sonar-scanner.bat\""
+                            bat "call \"${scannerHome}\\bin\\sonar-scanner.bat\" -Dsonar.token=squ_72011707019f1cc7166f2f9cd6df7ba0baf63dac"
                         }
                     }
                 }

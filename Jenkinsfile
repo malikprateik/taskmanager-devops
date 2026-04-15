@@ -30,7 +30,7 @@ pipeline {
                 echo '╚══════════════════════════════════════╝'
 
                 echo 'Setting up Python Virtual Environment...'
-                bat 'python -m venv .venv'
+                bat '"C:\\Users\\HP\\AppData\\Local\\Programs\\Python\\Python313\\python.exe" -m venv .venv'
                 
                 echo 'Installing Python dependencies...'
                 bat '.venv\\Scripts\\python.exe -m pip install --upgrade pip'

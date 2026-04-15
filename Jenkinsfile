@@ -82,8 +82,10 @@ pipeline {
                 echo 'Running SonarQube analysis...'
                 script {
                     def scannerHome = tool name: 'SonarScanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-                    withSonarQubeEnv('SonarQube') {
-                        bat "${scannerHome}\\bin\\sonar-scanner.bat"
+                    withEnv(["JAVA_HOME=D:\\app\\jdk-21.0.9_windows-x64_bin\\jdk-21.0.9", "PATH+JAVA=D:\\app\\jdk-21.0.9_windows-x64_bin\\jdk-21.0.9\\bin"]) {
+                        withSonarQubeEnv('SonarQube') {
+                            bat "call \"${scannerHome}\\bin\\sonar-scanner.bat\""
+                        }
                     }
                 }
 

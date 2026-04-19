@@ -126,6 +126,7 @@ pipeline {
                 echo 'Starting application in Staging mode on port 5001...'
                 bat '''
                     @echo off
+                    set BUILD_ID=dontKillMe
                     start "" /b cmd /c ".venv\\Scripts\\python.exe -m waitress --port=5001 run:application > staging.log 2>&1"
                     echo Waitress staging server launch command issued.
                 '''
@@ -172,6 +173,7 @@ pipeline {
                 echo 'Starting application in Production mode on port 5000...'
                 bat '''
                     @echo off
+                    set BUILD_ID=dontKillMe
                     start "" /b cmd /c ".venv\\Scripts\\python.exe -m waitress --port=5000 run:application > prod.log 2>&1"
                     echo Waitress production server launch command issued.
                 '''

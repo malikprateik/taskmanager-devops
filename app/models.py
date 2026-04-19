@@ -1,4 +1,4 @@
-"""Task model with CRUD operations for the Task Manager."""
+# task model for db operations
 from .database import get_db
 
 
@@ -7,7 +7,7 @@ VALID_PRIORITIES = ("low", "medium", "high", "critical")
 
 
 class Task:
-    """Represents a task with CRUD database operations."""
+    # stores a single task from the db
 
     def __init__(self, id, title, description, status,
                  priority, created_at, updated_at):
@@ -20,7 +20,7 @@ class Task:
         self.updated_at = updated_at
 
     def to_dict(self):
-        """Convert the task to a JSON-serialisable dictionary."""
+        # turn into json dict
         return {
             "id": self.id,
             "title": self.title,
@@ -33,7 +33,7 @@ class Task:
 
     @staticmethod
     def _row_to_task(row):
-        """Convert a database row to a Task instance."""
+        # row -> task object
         if row is None:
             return None
         return Task(
@@ -48,7 +48,7 @@ class Task:
 
     @staticmethod
     def get_all():
-        """Retrieve every task from the database."""
+        # fetch all tasks
         db = get_db()
         rows = db.execute(
             "SELECT * FROM tasks ORDER BY id DESC"
@@ -57,7 +57,7 @@ class Task:
 
     @staticmethod
     def get_by_id(task_id):
-        """Retrieve a single task by its ID."""
+        # get one task by id
         db = get_db()
         row = db.execute(
             "SELECT * FROM tasks WHERE id = ?", (task_id,)
@@ -67,7 +67,7 @@ class Task:
     @staticmethod
     def create(title, description="", status="pending",
                priority="medium"):
-        """Insert a new task and return it."""
+        # add a new task to db
         if not title or not title.strip():
             raise ValueError("Title is required and cannot be empty")
         if status not in VALID_STATUSES:
@@ -90,7 +90,7 @@ class Task:
 
     @staticmethod
     def update(task_id, **kwargs):
-        """Update an existing task with the provided fields."""
+        # update fields on a task
         task = Task.get_by_id(task_id)
         if task is None:
             return None
@@ -127,7 +127,7 @@ class Task:
 
     @staticmethod
     def delete(task_id):
-        """Delete a task by ID. Returns True if deleted, False if not found."""
+        # remove a task
         task = Task.get_by_id(task_id)
         if task is None:
             return False
@@ -138,14 +138,14 @@ class Task:
 
     @staticmethod
     def count():
-        """Return the total number of tasks."""
+        # count all tasks
         db = get_db()
         row = db.execute("SELECT COUNT(*) as cnt FROM tasks").fetchone()
         return row["cnt"]
 
     @staticmethod
     def count_by_status():
-        """Return task counts grouped by status."""
+        # group count by status
         db = get_db()
         rows = db.execute(
             "SELECT status, COUNT(*) as cnt FROM tasks GROUP BY status"

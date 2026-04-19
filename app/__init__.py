@@ -1,11 +1,11 @@
-"""Task Manager Flask Application Factory."""
+# flask app factory
 import os
 from flask import Flask
 from .database import init_db, close_db
 
 
 def create_app(testing=False):
-    """Create and configure the Flask application."""
+    # set up and return the flask app
     app = Flask(__name__)
 
     # Configuration

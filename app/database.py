@@ -1,20 +1,14 @@
-"""Database connection and initialization for Task Manager."""
+# sqlite db setup and connection handling
 import sqlite3
 from flask import g, current_app
 
-# Shared in-memory connection for testing
-# (in-memory SQLite creates a new DB per connection, so we share one)
+# shared connection for in-memory testing
+
 _shared_memory_db = None
 
 
 def get_db(app=None):
-    """Get a database connection for the current request context.
-
-    Stores the connection in Flask's g object so it is reused
-    within the same request and properly closed afterwards.
-    For in-memory databases (testing), uses a shared connection
-    so data persists across requests.
-    """
+    # get or create db connection for current request
     if "db" not in g:
         target_app = app or current_app
         db_path = target_app.config["DATABASE"]
@@ -41,20 +35,15 @@ def get_db(app=None):
 
 
 def close_db(exception=None):
-    """Close the database connection at the end of a request.
-
-    For in-memory (test) databases the connection is kept alive
-    globally so data persists between requests.
-    """
+    # close db unless its the shared test one
     db = g.pop("db", None)
-    # Only close file-based connections; the shared memory
-    # connection stays open for the entire test session
+
     if db is not None and db is not _shared_memory_db:
         db.close()
 
 
 def reset_memory_db():
-    """Reset the shared in-memory database (used between tests)."""
+    # wipe tasks table between tests
     global _shared_memory_db
     if _shared_memory_db is not None:
         try:
@@ -65,7 +54,7 @@ def reset_memory_db():
 
 
 def _create_tables(db):
-    """Create the tasks table if it does not already exist."""
+    # create the tasks table
     db.execute("""
         CREATE TABLE IF NOT EXISTS tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,7 +70,7 @@ def _create_tables(db):
 
 
 def init_db(app):
-    """Initialise the database schema on application startup."""
+    # run table creation on startup
     with app.app_context():
         db_path = app.config["DATABASE"]
         if db_path != ":memory:":

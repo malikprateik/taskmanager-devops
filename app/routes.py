@@ -1,8 +1,4 @@
-"""REST API routes for the Task Manager application.
-
-Provides full CRUD operations on tasks plus health and metrics
-endpoints required for the DevOps monitoring stage.
-"""
+# all the routes for the api including metrics
 import time
 import platform
 from flask import Blueprint, request, jsonify
@@ -32,15 +28,11 @@ def _track(endpoint, success=True):
     )
 
 
-# ── Health & Metrics ────────────────────────────────────────────
+# health/metric endpoints
 
 @api_bp.route("/health", methods=["GET"])
 def health_check():
-    """Return application health status.
-
-    Used by the deploy and monitoring pipeline stages to verify
-    the application is running correctly.
-    """
+    # returns health status for jenkins tests
     uptime = time.time() - _metrics["start_time"]
     return jsonify({
         "status": "healthy",
@@ -53,10 +45,7 @@ def health_check():
 
 @api_bp.route("/metrics", methods=["GET"])
 def prometheus_metrics():
-    """Return Prometheus-compatible metrics in text exposition format.
-
-    This endpoint is scraped by Prometheus for monitoring.
-    """
+    # prom metrics format for scraping
     uptime = time.time() - _metrics["start_time"]
 
     try:
@@ -106,11 +95,11 @@ def prometheus_metrics():
     }
 
 
-# ── CRUD Endpoints ──────────────────────────────────────────────
+# crud endpoints for the app
 
 @api_bp.route("/tasks", methods=["GET"])
 def get_tasks():
-    """Retrieve all tasks, optionally filtered by status or priority."""
+    # get tasks function
     _track("GET /tasks")
 
     tasks = Task.get_all()
@@ -136,7 +125,7 @@ def get_tasks():
 
 @api_bp.route("/tasks/<int:task_id>", methods=["GET"])
 def get_task(task_id):
-    """Retrieve a single task by its ID."""
+    # get single task
     _track(f"GET /tasks/{task_id}")
 
     task = Task.get_by_id(task_id)
@@ -149,11 +138,7 @@ def get_task(task_id):
 
 @api_bp.route("/tasks", methods=["POST"])
 def create_task():
-    """Create a new task.
-
-    Expects JSON body with at least a "title" field.
-    Optional: description, status, priority.
-    """
+    # create a task checkin json
     _track("POST /tasks")
 
     data = request.get_json()
@@ -182,10 +167,7 @@ def create_task():
 
 @api_bp.route("/tasks/<int:task_id>", methods=["PUT"])
 def update_task(task_id):
-    """Update an existing task.
-
-    Accepts any combination of: title, description, status, priority.
-    """
+    # update task with put
     _track(f"PUT /tasks/{task_id}")
 
     data = request.get_json()
@@ -208,7 +190,7 @@ def update_task(task_id):
 
 @api_bp.route("/tasks/<int:task_id>", methods=["DELETE"])
 def delete_task(task_id):
-    """Delete a task by its ID."""
+    # delete task
     _track(f"DELETE /tasks/{task_id}")
 
     deleted = Task.delete(task_id)

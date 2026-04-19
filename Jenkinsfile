@@ -20,14 +20,10 @@ pipeline {
 
     stages {
 
-        // -----------------------------------------------------------
-        // STAGE 1: BUILD
-        // -----------------------------------------------------------
+        // stage 1 build
         stage('Build') {
             steps {
-                echo '+======================================+'
-                echo '|        STAGE 1: BUILD                |'
-                echo '+======================================+'
+                echo 'building the python venv and installing pip packages'
 
                 echo 'Setting up Python Virtual Environment...'
                 bat "\"%PYTHON_HOME%\\python.exe\" -m venv .venv"
@@ -45,14 +41,10 @@ pipeline {
             }
         }
 
-        // -----------------------------------------------------------
-        // STAGE 2: TEST
-        // -----------------------------------------------------------
+        // stage 2 test
         stage('Test') {
             steps {
-                echo '+======================================+'
-                echo '|        STAGE 2: TEST                 |'
-                echo '+======================================+'
+                echo 'running pytest suite'
 
                 echo 'Running tests...'
                 bat '.venv\\Scripts\\python.exe -m pytest tests/ -v --junitxml=test-results.xml --cov=app --cov-report=xml:coverage.xml'
@@ -67,14 +59,10 @@ pipeline {
             }
         }
 
-        // -----------------------------------------------------------
-        // STAGE 3: CODE QUALITY
-        // -----------------------------------------------------------
+        // stage 3 static analysis
         stage('Code Quality') {
             steps {
-                echo '+======================================+'
-                echo '|     STAGE 3: CODE QUALITY            |'
-                echo '+======================================+'
+                echo 'running flake8 and sonarqube'
 
                 echo 'Running flake8 linting...'
                 bat '.venv\\Scripts\\python.exe -m flake8 app/ --output-file=flake8-report.txt --statistics --count || exit 0'
@@ -98,14 +86,10 @@ pipeline {
             }
         }
 
-        // -----------------------------------------------------------
-        // STAGE 4: SECURITY
-        // -----------------------------------------------------------
+        // stage 4 security scanning
         stage('Security') {
             steps {
-                echo '+======================================+'
-                echo '|       STAGE 4: SECURITY              |'
-                echo '+======================================+'
+                echo 'scanning with bandit'
 
                 echo 'Running Bandit security scan on Python code...'
                 bat '.venv\\Scripts\\python.exe -m bandit -r app/ -f json -o bandit-report.json || exit 0'
@@ -124,14 +108,10 @@ pipeline {
             }
         }
 
-        // -----------------------------------------------------------
-        // STAGE 5: DEPLOY TO STAGING
-        // -----------------------------------------------------------
+        // stage 5 deploy to staging
         stage('Deploy - Staging') {
             steps {
-                echo '+======================================+'
-                echo '|    STAGE 5: DEPLOY TO STAGING        |'
-                echo '+======================================+'
+                echo 'deploying to port 5001'
 
                 echo 'Stopping any existing staging instance on port 5001...'
                 bat '''
@@ -174,14 +154,10 @@ pipeline {
             }
         }
 
-        // -----------------------------------------------------------
-        // STAGE 6: RELEASE TO PRODUCTION
-        // -----------------------------------------------------------
+        // stage 6 prod release
         stage('Release - Production') {
             steps {
-                echo '+======================================+'
-                echo '|   STAGE 6: RELEASE TO PRODUCTION     |'
-                echo '+======================================+'
+                echo 'deploy to prod port 5000 and tag git version'
 
                 echo 'Stopping any existing production instance on port 5000...'
                 bat '''
@@ -227,14 +203,10 @@ pipeline {
             }
         }
 
-        // -----------------------------------------------------------
-        // STAGE 7: MONITORING
-        // -----------------------------------------------------------
+        // stage 7 monitor the api
         stage('Monitoring') {
             steps {
-                echo '+======================================+'
-                echo '|      STAGE 7: MONITORING             |'
-                echo '+======================================+'
+                echo 'checking endpoints and prometheus scrape target'
 
                 echo 'Checking application health...'
                 bat 'C:\\Windows\\System32\\curl.exe -s http://localhost:5000/health'

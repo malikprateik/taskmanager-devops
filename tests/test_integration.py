@@ -1,8 +1,4 @@
-"""Integration tests for the Task Manager application.
-
-These tests verify end-to-end workflows that span multiple
-endpoints, simulating real user interactions with the API.
-"""
+# integration tests for the full api workflow
 import json
 import pytest
 from app import create_app
@@ -11,7 +7,7 @@ from app.database import reset_memory_db
 
 @pytest.fixture(autouse=True)
 def clean_db():
-    """Reset the in-memory database before each test."""
+    # reset db before each test
     reset_memory_db()
     yield
     reset_memory_db()
@@ -19,22 +15,21 @@ def clean_db():
 
 @pytest.fixture
 def app():
-    """Create a test application with an in-memory database."""
+    # test app with memory db
     app = create_app(testing=True)
     yield app
 
 
 @pytest.fixture
 def client(app):
-    """Create a test client for making HTTP requests."""
+    # flask test client
     return app.test_client()
 
 
 class TestTaskWorkflow:
-    """Integration tests for complete task lifecycle workflows."""
 
     def test_full_crud_lifecycle(self, client):
-        """Test the complete lifecycle: create, read, update, delete."""
+        # create read update delete lifecycle
         # Create
         create_resp = client.post(
             "/tasks",
@@ -76,7 +71,7 @@ class TestTaskWorkflow:
         assert verify_resp.status_code == 404
 
     def test_multiple_tasks_ordering(self, client):
-        """Verify that multiple tasks are returned in order."""
+        # check order of returned tasks
         titles = ["First Task", "Second Task", "Third Task"]
         for title in titles:
             resp = client.post("/tasks", json={"title": title})
@@ -91,7 +86,7 @@ class TestTaskWorkflow:
         assert returned_titles == list(reversed(titles))
 
     def test_filter_tasks_by_status(self, client):
-        """Verify filtering tasks by status query parameter."""
+        # filter by status param
         # Create tasks with different statuses
         client.post(
             "/tasks",
@@ -120,7 +115,7 @@ class TestTaskWorkflow:
         assert data["tasks"][0]["title"] == "Completed Task"
 
     def test_filter_tasks_by_priority(self, client):
-        """Verify filtering tasks by priority query parameter."""
+        # filter by priority param
         client.post(
             "/tasks",
             json={"title": "Low Task", "priority": "low"},
@@ -136,7 +131,7 @@ class TestTaskWorkflow:
         assert data["tasks"][0]["priority"] == "critical"
 
     def test_health_reflects_running_state(self, client):
-        """Health endpoint should reflect a running app with metrics."""
+        # make sure health endpoint works after requests
         # Hit some endpoints to generate metrics
         client.post("/tasks", json={"title": "Metrics Task"})
         client.get("/tasks")
@@ -147,7 +142,7 @@ class TestTaskWorkflow:
         assert data["uptime_seconds"] >= 0
 
     def test_metrics_reflect_activity(self, client):
-        """Metrics endpoint should reflect request counts."""
+        # check metrics have counted our requests
         # Generate some traffic
         client.post("/tasks", json={"title": "Task 1"})
         client.post("/tasks", json={"title": "Task 2"})
@@ -166,7 +161,7 @@ class TestTaskWorkflow:
         assert "app_endpoint_hits" in text
 
     def test_error_handling_consistency(self, client):
-        """All error responses should have consistent JSON structure."""
+        # make sure all errors return json with error key
         # 404 on GET
         resp1 = client.get("/tasks/999")
         assert resp1.status_code == 404

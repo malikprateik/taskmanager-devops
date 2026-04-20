@@ -4,21 +4,20 @@ A Python Flask REST API with a complete CI/CD pipeline using Jenkins, demonstrat
 
 ## Project Overview
 
-Task Manager is a RESTful API built with Flask and SQLite that provides full CRUD operations for managing tasks. The project includes a comprehensive Jenkins pipeline with automated build, test, code quality, security scanning, deployment, release, and monitoring stages.
+Task Manager is a RESTful API built with Flask and SQLite that provides full CRUD operations for managing tasks. The project includes a Jenkins pipeline with automated build, test, code quality, security scanning, deployment, release, and monitoring stages running natively on Windows.
 
 ## Tech Stack
 
 | Component | Technology |
-|-----------|-----------|
-| Application | Python 3.11 / Flask 2.3.3 |
+|-----------|------------|
+| Application | Python 3.13 / Flask 2.3.3 |
 | Database | SQLite |
-| Containerisation | Docker / Docker Compose |
 | CI/CD | Jenkins (Declarative Pipeline) |
 | Testing | pytest + pytest-cov |
 | Code Quality | flake8 + SonarQube |
-| Security | Bandit (SAST) + Trivy (Container) |
+| Security | Bandit (SAST) |
 | Monitoring | Prometheus |
-| Production Server | Gunicorn |
+| Production Server | Waitress (Windows WSGI) |
 
 ## API Endpoints
 
@@ -34,31 +33,27 @@ Task Manager is a RESTful API built with Flask and SQLite that provides full CRU
 
 ## Pipeline Stages
 
-1. **Build** - Install dependencies and build Docker image with version tagging
-2. **Test** - Run unit and integration tests with coverage reporting
-3. **Code Quality** - flake8 linting + SonarQube analysis with quality gates
-4. **Security** - Bandit SAST scan + Trivy container image scan
-5. **Deploy** - Automated staging deployment with health checks and smoke tests
-6. **Release** - Production deployment with versioned Docker + Git tags
-7. **Monitoring** - Prometheus metrics verification and monitoring report
+1. **Build** - Create Python virtual environment and install pinned dependencies
+2. **Test** - Run unit and integration tests with JUnit reports and coverage
+3. **Code Quality** - flake8 linting + SonarQube static analysis
+4. **Security** - Bandit SAST scan for Python vulnerabilities
+5. **Deploy** - Automated staging deployment on port 5001 with health checks
+6. **Release** - Production deployment on port 5000 with Git version tagging
+7. **Monitoring** - Prometheus metrics verification and monitoring report generation
 
 ## Quick Start
 
-### Local Development
 ```bash
 pip install -r requirements.txt
 python run.py
 ```
 
-### Docker
-```bash
-docker build -t taskmanager:latest .
-docker run -p 5000:5000 taskmanager:latest
-```
+The app will be available at `http://localhost:5000`.
 
-### Full Stack (App + Prometheus)
+## Running Tests
+
 ```bash
-docker-compose up -d
+pytest tests/ -v --cov=app
 ```
 
 ## Project Structure
@@ -71,14 +66,10 @@ taskmanager/
 │   ├── models.py            # Task model with CRUD operations
 │   └── database.py          # SQLite connection management
 ├── tests/
-│   ├── test_unit.py         # 25 unit tests
-│   └── test_integration.py  # 8 integration tests
+│   ├── test_unit.py         # Unit tests for all endpoints
+│   └── test_integration.py  # Integration tests for full workflows
 ├── prometheus/
 │   └── prometheus.yml       # Prometheus scrape configuration
-├── screenshots/             # Jenkins pipeline screenshots
-├── Dockerfile               # Production container image
-├── docker-compose.yml       # Staging environment
-├── docker-compose.prod.yml  # Production environment
 ├── Jenkinsfile              # 7-stage CI/CD pipeline
 ├── requirements.txt         # Pinned Python dependencies
 ├── sonar-project.properties # SonarQube configuration
@@ -89,5 +80,6 @@ taskmanager/
 
 ## Author
 
+Prateik Malik
 SIT223/SIT753 - Professional Practice in IT
 Task 7.3HD - DevOps Pipeline with Jenkins

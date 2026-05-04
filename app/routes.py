@@ -1,10 +1,16 @@
 # all the routes for the api including metrics
 import time
 import platform
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 from .models import Task
 
 api_bp = Blueprint("api", __name__)
+
+
+@api_bp.route("/", methods=["GET"])
+def index():
+    # serve the frontend page
+    return render_template("index.html")
 
 # Track request metrics in memory
 _metrics = {
